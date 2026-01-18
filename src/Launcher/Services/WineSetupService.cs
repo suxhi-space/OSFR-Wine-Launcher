@@ -54,20 +54,25 @@ public static class WineSetupService
                         // Disable Mono/Gecko popups
                         await RunWineCommand("reg", "add HKCU\\Software\\Wine\\DllOverrides /v mscoree /t REG_SZ /d \"\" /f");
                         await RunWineCommand("reg", "add HKCU\\Software\\Wine\\DllOverrides /v mshtml /t REG_SZ /d \"\" /f");
+                        
+                        // --- NEW: Set Windows Version to Windows 7 ---
+    // This tells Wine to report as "win7".
+    await RunWineCommand("reg", "add HKCU\\Software\\Wine /v Version /t REG_SZ /d win7 /f");
 
                         // Disable Wine's built-in menu builder to avoid "winemenubuilder.exe not found" errors in logs
                         await RunWineCommand("reg", "add HKCU\\Software\\Wine\\DllOverrides /v winemenubuilder.exe /t REG_SZ /d \"\" /f");
+                        
+                        // Apply Visual C++ 2005 (msvcr80) Compatibility
+                            status.Report("Applying Visual C++ 2005 Compatibility...");
+                            // native,builtin forces Wine to use the Microsoft DLL if present in the game folder
+                            await RunWineCommand("reg", "add \"HKCU\\Software\\Wine\\DllOverrides\" /v msvcr80 /t REG_SZ /d native,builtin /f");
+                            await RunWineCommand("reg", "add \"HKCU\\Software\\Wine\\DllOverrides\" /v msvcp80 /t REG_SZ /d native,builtin /f");
 
                         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                         {
                             // Install DXVK (D3D9 to Vulkan)
                             await InstallDxvk(status);
 
-                            // Apply Visual C++ 2005 (msvcr80) Compatibility
-                            status.Report("Applying Visual C++ 2005 Compatibility...");
-                            // native,builtin forces Wine to use the Microsoft DLL if present in the game folder
-                            await RunWineCommand("reg", "add \"HKCU\\Software\\Wine\\DllOverrides\" /v msvcr80 /t REG_SZ /d native,builtin /f");
-                            await RunWineCommand("reg", "add \"HKCU\\Software\\Wine\\DllOverrides\" /v msvcp80 /t REG_SZ /d native,builtin /f");
                         }
                     }
                     status.Report("Setup Complete!");
