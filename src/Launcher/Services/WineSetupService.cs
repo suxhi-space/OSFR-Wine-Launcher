@@ -55,12 +55,15 @@ public static class WineSetupService
                         await RunWineCommand("reg", "add HKCU\\Software\\Wine\\DllOverrides /v mscoree /t REG_SZ /d \"\" /f");
                         await RunWineCommand("reg", "add HKCU\\Software\\Wine\\DllOverrides /v mshtml /t REG_SZ /d \"\" /f");
                         
-                        // --- NEW: Set Windows Version to Windows 7 ---
-    // This tells Wine to report as "win7".
-    await RunWineCommand("reg", "add HKCU\\Software\\Wine /v Version /t REG_SZ /d win7 /f");
+                        // --- NEW: Set Windows Version to Windows XP ---
+    // This tells Wine to report as "winxp". For better stability with older engines.
+    await RunWineCommand("reg", "add HKCU\\Software\\Wine /v Version /t REG_SZ /d winxp /f");
 
                         // Disable Wine's built-in menu builder to avoid "winemenubuilder.exe not found" errors in logs
                         await RunWineCommand("reg", "add HKCU\\Software\\Wine\\DllOverrides /v winemenubuilder.exe /t REG_SZ /d \"\" /f");
+                        
+                        // Force the engine to use the correct version of the DirectX helper
+await RunWineCommand("reg", "add \"HKCU\\Software\\Wine\\DllOverrides\" /v \"d3dx9_31,d3dx9_36,d3d9\" /t REG_SZ /d native,builtin /f");
                         
                         // Apply Visual C++ 2005 (msvcr80) Compatibility
                             status.Report("Applying Visual C++ 2005 Compatibility...");
@@ -72,6 +75,14 @@ public static class WineSetupService
                         {
                             // Install DXVK (D3D9 to Vulkan)
                             await InstallDxvk(status);
+
+                        }
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                        {
+                            // --- NEW: Disable CSMT (Multi-threaded rendering) ---
+// This prevents the graphics engine from "racing" ahead of the game logic, 
+// which causes the 0x180 Null Pointer crash.
+await RunWineCommand("reg", "add HKCU\\Software\\Wine\\Direct3D /v CSMT /t REG_DWORD /d 0x0 /f");
 
                         }
                     }
@@ -121,6 +132,7 @@ public static class WineSetupService
                     var psi = new ProcessStartInfo(EngineBin) { UseShellExecute = false, CreateNoWindow = true };
                     psi.Arguments = $"{cmd} {args}";
                     psi.EnvironmentVariables["WINEPREFIX"] = PrefixPath;
+                    psi.EnvironmentVariables["WINE_LARGE_ADDRESS_AWARE"] = "1";
                     psi.EnvironmentVariables["WINEDEBUG"] = "-all";
                     using var p = Process.Start(psi);
                     if (p != null) await p.WaitForExitAsync();

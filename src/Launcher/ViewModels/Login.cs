@@ -126,6 +126,8 @@ public partial class Login : Popup
             // --- Shared Bottle Environment ---
             var env = _server.Process.StartInfo.EnvironmentVariables;
             env["WINEPREFIX"] = WineSetupService.PrefixPath;
+            env["WINE_LARGE_ADDRESS_AWARE"] = "1";
+            env["WINEDLLOVERRIDES"] = "d3d9=b;d3dx9_31=n,b";
             env["WINE_NOCRASHDIALOG"] = "1";
             env["WINEDEBUG"] = "-all";
 
